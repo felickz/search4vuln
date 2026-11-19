@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>search4vuln: GitHub code search queries for runtime CVEs</title>
+  <meta name="description" content="Generate GitHub code search URLs that find repos referencing runtime versions affected by recent runtime CVEs (Java4Shell, PHP2Shell).">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>search4vuln</h1>
+    <p>Pick a vulnerability and a scope, then open ready-made GitHub code search queries that find repos referencing possibly affected runtimes.</p>
+  </header>
+
+  <main>
+    <section class="warning" role="note">
+      <strong>These results are a candidate list, not confirmation of exposure.</strong>
+      A match means a repo references a runtime version that could be affected. Floating tags move, bundled JDKs and vendor products are invisible,
+      and the real runtime is decided by CI, the base image or the host. Verify built images and hosts with
+      <code>java -version</code>, <code>jcmd &lt;PID&gt; VM.version</code>, <code>php -v</code>, or an image scanner or SBOM.
+    </section>
+
+    <form id="controls" autocomplete="off" onsubmit="return false">
+      <label>Vulnerability
+        <select id="vuln"></select>
+      </label>
+      <label>Scope
+        <select id="scope"></select>
+      </label>
+      <label id="value-label">Value
+        <input id="value" type="text" spellcheck="false" autocapitalize="off">
+      </label>
+      <button type="button" id="share">Copy share link</button>
+    </form>
+    <p id="scope-help" class="muted"></p>
+    <p id="scope-error" class="error" role="alert" hidden></p>
+
+    <section id="info"></section>
+    <section id="cards"></section>
+  </main>
+
+  <footer>
+    <p>
+      Queries use <a href="https://docs.github.com/en/search-github/github-code-search/understanding-github-code-search-syntax" rel="noopener">GitHub code search syntax</a>.
+      Nothing is sent anywhere except the GitHub search page you choose to open. Source:
+      <a href="https://github.com/felickz/search4vuln" rel="noopener">felickz/search4vuln</a>.
+    </p>
+  </footer>
+
+  <script src="lib.js"></script>
+  <script src="vulns.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
