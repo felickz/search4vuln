@@ -13,6 +13,15 @@
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 header, main, footer { max-width: 960px; margin: 0 auto; padding: 0 16px; }
 header { padding-top: 24px; }
+
+.github-corner { position: absolute; top: 0; right: 0; z-index: 10; line-height: 0; color: var(--bg); }
+.github-corner svg { fill: var(--accent); color: var(--bg); }
+.github-corner .octo-arm { transform-origin: 130px 106px; }
+.github-corner:hover .octo-arm { animation: octocat-wave 560ms ease-in-out; }
+@keyframes octocat-wave { 0%, 100% { transform: rotate(0); } 20%, 60% { transform: rotate(-25deg); } 40%, 80% { transform: rotate(10deg); } }
+@media (max-width: 1120px) { header { padding-right: 96px; } }
+@media (max-width: 600px) { .github-corner svg { width: 60px; height: 60px; } header { padding-right: 76px; } }
+@media (prefers-reduced-motion: reduce) { .github-corner:hover .octo-arm { animation: none; } }
 h1 { margin: 0 0 4px; }
 h2 { margin-top: 0; }
 a { color: var(--accent); }
