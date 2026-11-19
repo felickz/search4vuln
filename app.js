@@ -84,15 +84,23 @@
     }
     v.cards.filter(function (c) { return c.tab === currentTab; }).forEach(function (card) {
       var shown = lib.buildQuery(q.ok ? q.qualifier : "<scope>", card.query);
-      var open = el("button", { type: "button", className: "primary", textContent: "Open on GitHub", disabled: !q.ok });
-      open.addEventListener("click", function () { window.open(lib.searchUrl(shown), "_blank", "noopener,noreferrer"); });
+      var url = lib.searchUrl(shown);
+      var open = q.ok
+        ? el("a", { className: "button primary", href: url, target: "_blank", rel: "noopener noreferrer", textContent: "Open on GitHub" })
+        : el("button", { type: "button", className: "primary", textContent: "Open on GitHub", disabled: true });
       var cp = el("button", { type: "button", textContent: "Copy query", disabled: !q.ok });
       cp.addEventListener("click", function () { copy(shown, cp); });
+      var cpUrl = el("button", { type: "button", textContent: "Copy URL", disabled: !q.ok });
+      cpUrl.addEventListener("click", function () { copy(url, cpUrl); });
+      var urlLine = q.ok
+        ? el("a", { className: "url", href: url, target: "_blank", rel: "noopener noreferrer", title: url, textContent: url })
+        : el("span", { className: "url muted", textContent: "Enter a valid scope value to generate the URL." });
       els.cards.appendChild(el("article", { className: "card" }, [
         el("h3", { textContent: card.title }),
         el("p", { textContent: card.finds }),
         el("pre", { className: "query", textContent: shown }),
-        el("div", { className: "actions" }, [open, cp])
+        urlLine,
+        el("div", { className: "actions" }, [open, cp, cpUrl])
       ]));
     });
   }

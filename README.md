@@ -44,8 +44,8 @@ Verify built images and hosts with `java -version`, `jcmd <PID> VM.version`, `ph
 
    Neither tab can confirm exploitability. Hardware (AVX-512 VBMI for Java4Shell), SAPI (mod_php for PHP2Shell), vendor-patched images,
    mitigations and reachability are invisible to code search.
-4. Each query card shows what it finds and the query text. **Open on GitHub** opens
-   `https://github.com/search?type=code&q=<encoded query>` in a new tab. **Copy query** copies the text.
+4. Each query card shows what it finds, the query text and the full search URL. **Open on GitHub** is a normal link (opens in a new tab,
+   and middle-click, ctrl/cmd-click and right-click work, so you can open many cards quickly). **Copy query** and **Copy URL** copy the text.
 5. **Copy share link** copies a URL such as `?vuln=php2shell&tab=pinned&scope=org&value=acme`. Opening it prefills the form.
 
 You must be signed in to GitHub to use code search, and you can only see repos you have access to.
