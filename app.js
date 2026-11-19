@@ -66,7 +66,23 @@
 
   function renderCards(v, q) {
     els.cards.textContent = "";
-    v.cards.forEach(function (card) {
+    var tabs = el("div", { className: "tabs", role: "tablist" });
+    lib.TABS.forEach(function (t) {
+      var count = v.cards.filter(function (c) { return c.tab === t.id; }).length;
+      var b = el("button", { type: "button", className: "tab", role: "tab", textContent: t.label + " (" + count + ")" });
+      b.setAttribute("aria-selected", String(t.id === currentTab));
+      b.addEventListener("click", function () { currentTab = t.id; update(); });
+      tabs.appendChild(b);
+    });
+    els.cards.appendChild(tabs);
+    var tab = lib.TABS.filter(function (t) { return t.id === currentTab; })[0];
+    els.cards.appendChild(el("p", { className: "tab-intro", textContent: tab.intro }));
+    if (currentTab === "pinned" && v.ruledOut && v.ruledOut.length) {
+      var ruled = el("div", { className: "ruled-out" }, [el("strong", { textContent: "Ruled out or lower concern" })]);
+      ruled.appendChild(el("ul", {}, v.ruledOut.map(function (t) { return el("li", { textContent: t }); })));
+      els.cards.appendChild(ruled);
+    }
+    v.cards.filter(function (c) { return c.tab === currentTab; }).forEach(function (card) {
       var shown = lib.buildQuery(q.ok ? q.qualifier : "<scope>", card.query);
       var open = el("button", { type: "button", className: "primary", textContent: "Open on GitHub", disabled: !q.ok });
       open.addEventListener("click", function () { window.open(lib.searchUrl(shown), "_blank", "noopener,noreferrer"); });
@@ -81,6 +97,8 @@
     });
   }
 
+  var currentTab = lib.TABS[0].id;
+
   function readState() {
     var p = new URLSearchParams(location.search);
     var vuln = p.get("vuln");
@@ -88,11 +106,14 @@
     var scope = p.get("scope");
     if (scope && lib.SCOPES[scope]) els.scope.value = scope;
     els.value.value = p.get("value") || "";
+    var tab = p.get("tab");
+    if (lib.TABS.some(function (t) { return t.id === tab; })) currentTab = tab;
   }
 
   function shareUrl() {
     var p = new URLSearchParams();
     p.set("vuln", els.vuln.value);
+    p.set("tab", currentTab);
     p.set("scope", els.scope.value);
     if (els.scope.value !== "none" && els.value.value.trim()) p.set("value", els.value.value.trim());
     return "?" + p;

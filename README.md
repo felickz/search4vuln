@@ -35,9 +35,18 @@ Verify built images and hosts with `java -version`, `jcmd <PID> VM.version`, `ph
    | Repository | `repo:OWNER/NAME` | Full name with owner |
    | None | (nothing) | Searches all of GitHub, very broad |
 
-3. Each query card shows what it finds and the query text. **Open on GitHub** opens
+3. Pick a confidence tab (also stored in the link as `tab=pinned` or `tab=potential`):
+   - **Pinned in affected range**: queries that match an explicit patch-level build inside the affected range (for example
+     `eclipse-temurin:17.0.9_9` or `php:8.3.10-apache`). Fixed builds and unaffected lines cannot match. A short "ruled out" note lists
+     what is not affected.
+   - **Potential (unpinned or unknown)**: floating or major-only tags, language-level declarations, bundled-product images and similar.
+     These show a possibly affected runtime line only. The real build is decided by the image pull time, CI, platform or host.
+
+   Neither tab can confirm exploitability. Hardware (AVX-512 VBMI for Java4Shell), SAPI (mod_php for PHP2Shell), vendor-patched images,
+   mitigations and reachability are invisible to code search.
+4. Each query card shows what it finds and the query text. **Open on GitHub** opens
    `https://github.com/search?type=code&q=<encoded query>` in a new tab. **Copy query** copies the text.
-4. **Copy share link** copies a URL such as `?vuln=php2shell&scope=org&value=acme`. Opening it prefills the form.
+5. **Copy share link** copies a URL such as `?vuln=php2shell&tab=pinned&scope=org&value=acme`. Opening it prefills the form.
 
 You must be signed in to GitHub to use code search, and you can only see repos you have access to.
 Enterprise scope needs an enterprise you belong to.
@@ -70,9 +79,11 @@ generated from it.
   reported: "", // optional extra note
   links: [{ label: "Advisory", url: "https://..." }],
   caveats: ["..."],
+  ruledOut: ["What is NOT affected (shown on the Pinned tab)."],
   cards: [
     {
       id: "docker-images",           // unique within the vuln
+      tab: "pinned",                 // "pinned" or "potential" (required)
       title: "Card title",
       finds: "What this query finds.",
       query: String.raw`/regex/ path:/(^|\/)Dockerfile$/`   // no scope qualifier
@@ -81,14 +92,19 @@ generated from it.
 }
 ```
 
-Then add sample lines for each new card to `test/test.js` (lines that must match and lines that must not) and run it.
-The test fails if a card has no samples.
+Put a card on the **pinned** tab only when its regex needs an explicit patch version inside the affected range and cannot match fixed
+builds; everything else goes on **potential**. Then add sample lines for each new card to `test/test.js` (lines that must match and
+lines that must not, including boundary versions just below, at and above the fixed release) and run it.
+The test fails if a card has no samples or no valid tab.
 
 ### Query writing rules
 
 - A card `query` has no `org:`/`enterprise:` part. The page puts the scope first: `org:acme <query>`.
 - Wrap regexes in slashes and escape literal slashes as `\/`. Use `String.raw` so backslashes stay readable.
-- Keep regexes simple: character classes, alternation, groups, `?`, `*`, `+`, `{m,n}`. No lookaround or backreferences.
+- Keep regexes simple: character classes, alternation, groups, `?`, `*`, `+`. No lookaround or backreferences.
+- Anchor on `FROM`, `image:`, `ARG`, `ENV`, `java-version:`, download URLs or `JAVA_HOME` instead of bare words such as `jdk17`, which
+  match comments and code constants (for example `isAtLeastJDK17`).
+- Put a version boundary before pinned versions (`[^0-9.]`) so `117.0.9` or `1.17.0.9` cannot match.
 - Prefer `[0-9]` over shorthand classes and avoid relying on case-insensitivity.
 - Use `path:` (glob like `path:*.md` or regex like `path:/(^|\/)pom\.xml$/`) to limit file types. Use `NOT` to exclude.
 - Keep boolean logic in parentheses when mixing `OR` and `AND`.

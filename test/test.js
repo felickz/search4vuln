@@ -66,7 +66,15 @@ function balanced(s) {
 }
 
 const ids = new Set();
+check("tab wording", () => {
+  lib.TABS.forEach((t) => assert.ok(!/exploitable|confirmed vulnerable/i.test(t.label), t.label));
+  assert.deepStrictEqual(lib.TABS.map((t) => t.id), ["pinned", "potential"]);
+});
 vulns.forEach((v) => {
+  check(v.id + " has both tabs and ruledOut", () => {
+    lib.TABS.forEach((t) => assert.ok(v.cards.some((c) => c.tab === t.id), "no cards in tab " + t.id));
+    assert.ok(v.ruledOut && v.ruledOut.length);
+  });
   check(v.id + " unique", () => { assert.ok(!ids.has(v.id)); ids.add(v.id); });
   const cardIds = new Set();
   v.cards.forEach((c) => {
@@ -75,6 +83,7 @@ vulns.forEach((v) => {
       assert.ok(!cardIds.has(c.id), "duplicate card id");
       cardIds.add(c.id);
       assert.ok(c.title && c.finds && c.query);
+      assert.ok(lib.TABS.some((t) => t.id === c.tab), "card needs a valid tab");
       assert.ok(balanced(c.query), "unbalanced parentheses");
       assert.ok(extract(c.query).length >= 1, "no regex found");
     });
@@ -97,16 +106,44 @@ const samples = {
     content: [["FROM eclipse-temurin:17-jre", "FROM amazoncorretto:21-al2023", "FROM openjdk:21-slim", "FROM mcr.microsoft.com/openjdk/jdk:25-ubuntu",
       "FROM azul/zulu-openjdk:17", "FROM gcr.io/distroless/java17-debian12", "FROM maven:3.9.6-eclipse-temurin-21", "FROM gradle:8.5-jdk21",
       "FROM ghcr.io/graalvm/jdk-community:27", "RUN apt-get install -y openjdk-17-jdk", "FROM sapmachine:21.0.5"],
-    ["FROM eclipse-temurin:11-jre", "FROM openjdk:8-jdk", "FROM node:20-alpine", "FROM eclipse-temurin:11.0.17_8-jdk", "FROM python:3.12"]],
+    ["FROM eclipse-temurin:11-jre", "FROM openjdk:8-jdk", "FROM node:20-alpine", "FROM eclipse-temurin:11.0.17_8-jdk", "FROM python:3.12", "# Needed for jdk17 compat", "isAtLeastJDK17 = true"]],
     path: [["Dockerfile", "svc/Dockerfile.prod", "build/app.Dockerfile", "a/Containerfile"], ["README.md", "src/Main.java"]]
   },
   "java4shell/yaml-images": {
     content: [["    image: eclipse-temurin:21-jdk", "image: \"amazoncorretto:17\"", "image: maven:3.9-eclipse-temurin-21"], ["image: nginx:1.25", "image: eclipse-temurin:11"]],
     path: [["docker-compose.yml", "k8s/deploy.yaml"], ["a.json"]]
   },
-  "java4shell/pinned-17-0-6": {
-    content: [["FROM eclipse-temurin:17.0.6_10-jre", "FROM amazoncorretto:17.0.9-al2023", "image: openjdk:17.0.21.1", "FROM eclipse-temurin:17.0.12"],
-      ["FROM eclipse-temurin:17.0.5_8-jre", "FROM eclipse-temurin:17-jre", "FROM eclipse-temurin:17.0.0", "FROM openjdk:11.0.17"]]
+  "java4shell/pinned-images": {
+    content: [["FROM eclipse-temurin:17.0.6_10-jre", "FROM eclipse-temurin:17.0.9_9-jdk-jammy", "FROM amazoncorretto:17.0.9-al2023", "FROM amazoncorretto:17.0.21",
+      "FROM openjdk:21.0.2-slim", "image: mcr.microsoft.com/openjdk/jdk:21.0.5-ubuntu", "ARG JAVA_VERSION=17.0.12", "FROM eclipse-temurin:25.0.3",
+      "FROM azul/zulu-openjdk:17.0.21.0.3", "FROM eclipse-temurin:27.0.0", "FROM amazoncorretto:21.0.13", "FROM sapmachine:21.0.0", "FROM amazoncorretto:17.0.9.9.1", "FROM eclipse-temurin:27.0.1"],
+    ["FROM eclipse-temurin:17.0.5_8-jre", "FROM eclipse-temurin:17.0.2", "FROM amazoncorretto:17.0.21.1.2", "FROM amazoncorretto:21.0.13.1.2", "FROM amazoncorretto:25.0.5.1.2",
+      "FROM amazoncorretto:27.0.1.1.4", "FROM eclipse-temurin:17-jre", "FROM openjdk:11.0.17", "FROM openjdk:8u352", "FROM ibm-semeru-runtimes:open-17.0.9_9-jdk",
+      "FROM registry.access.redhat.com/ubi8/openjdk-17:1.14-10.1675788279", "FROM eclipse-temurin:17.0.21.1", "FROM eclipse-temurin:21.0.13.1", "FROM eclipse-temurin:17.0.50",
+      "FROM eclipse-temurin:25.0.6", "FROM eclipse-temurin:27.0.1.1", "# Needed for JDK17 17.0.9"]],
+    path: [["Dockerfile", "docker-compose.yml"], ["pom.xml"]]
+  },
+  "java4shell/pinned-downloads": {
+    content: [["ENV JAVA_HOME=/opt/jdk-17.0.9+9", "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7+7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.7_7.tar.gz",
+      "apt-get install openjdk-17-jdk=17.0.9+9-1", "JAVA_VERSION=21.0.5", "zulu17.44.17-ca-jdk17.0.8-linux_x64.tar.gz", "https://corretto.aws/downloads/resources/17.0.9.9.1/amazon-corretto-17.0.9.9.1-linux-x64.tar.gz"],
+    ["JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64", "jdk-17.0.5+8", "corretto-17.0.21.1.2-linux", "java 11.0.20", "node 21.0.0", "temurin-17.0.2", "zulu17.44.17-ca-jdk17.0.5-linux_x64.tar.gz"]]
+  },
+  "java4shell/pinned-setup-java": {
+    content: [["          java-version: '17.0.9'", "java-version: 21.0.5", "        java: ['17.0.9', '21.0.2']"],
+      ["java-version: '17'", "java-version: '17.0.5'", "java-version: 21", "java-version: '21.0.13.1'", "java-version: '17.0.2'", "node-version: 21.0.0"]],
+    path: [[".github/workflows/ci.yml"], ["docs/ci.yml"]]
+  },
+  "java4shell/pinned-java-version-file": {
+    content: [["17.0.9", "21.0.5", "temurin-17.0.9", "openjdk64-21.0.2"], ["17.0.5", "17", "21", "17.0.21.1", "11.0.17"]],
+    path: [[".java-version", "app/.java-version"], ["java-version"]]
+  },
+  "java4shell/pinned-tool-versions": {
+    content: [["java=17.0.9-tem", "java temurin-21.0.2", "java 21.0.5+11.0.LTS"], ["java=17.0.5-tem", "nodejs 21.0.0", "java 17", "java temurin-17.0.21.1"]],
+    path: [[".sdkmanrc", ".tool-versions", "mise.toml"], ["tool-versions.md"]]
+  },
+  "java4shell/ubi-dated-tags": {
+    content: [["FROM registry.access.redhat.com/ubi8/openjdk-17:1.14-10.1675788279", "image: registry.access.redhat.com/ubi9/openjdk-21-runtime:1.18"],
+      ["FROM registry.access.redhat.com/ubi8/openjdk-11:1.14", "FROM ubi8/nodejs-18"]]
   },
   "java4shell/devcontainer": {
     content: [["\"image\": \"mcr.microsoft.com/devcontainers/java:21\"", "\"image\": \"eclipse-temurin:17\""], ["\"image\": \"mcr.microsoft.com/devcontainers/java:11\""]],
@@ -157,9 +194,34 @@ const samples = {
     content: [["FROM php:8.3-fpm", "FROM php:7.4-apache", "FROM php:8.5-cli", "RUN apt-get install php8.2-fpm", "FROM serversideup/php:8.4-fpm-nginx", "image: dunglas/frankenphp:1.2-php8.3"],
       ["FROM php:9.0-cli", "FROM node:8.3", "image: phpmyadmin:5.2"]]
   },
-  "php2shell/pinned-below-fixed": {
-    content: [["FROM php:8.3.10-apache", "FROM php:8.2.0-fpm", "FROM php:8.2.34-cli", "FROM php:8.3.35-fpm", "FROM php:8.4.26", "FROM php:8.5.11-apache", "FROM php:8.5.0", "FROM php:8.4.9-fpm"],
-      ["FROM php:8.2.35-apache", "FROM php:8.3.36", "FROM php:8.4.27-fpm", "FROM php:8.5.12", "FROM php:8.5.13-cli", "FROM php:8.3-apache", "FROM php:8.2.100"]]
+  "php2shell/pinned-images": {
+    content: [["FROM php:8.3.10-apache", "FROM php:8.2.0-fpm", "FROM php:8.2.34-cli", "FROM php:8.3.35-fpm", "image: php:8.4.26", "FROM php:8.5.11-apache", "FROM php:8.5.0",
+      "ARG PHP_VERSION=8.4.9", "FROM php:7.4.33-apache", "FROM php:8.1.27-fpm", "FROM php:8.0.30-cli", "ENV PHP_VERSION 8.2.10", "FROM php:5.6.40-apache", "FROM wordpress:6.5-php8.2.10-apache"],
+    ["FROM php:8.2.35-apache", "FROM php:8.3.36", "FROM php:8.4.27-fpm", "FROM php:8.5.12", "FROM php:8.5.13-cli", "FROM php:8.3-apache", "FROM php:8.2.100", "FROM php:8.2.350",
+      "FROM mysql:8.0.35", "FROM php:8.2.36", "FROM php:8.4.28", "FROM php:7.4-apache", "FROM php:8.10.1", "FROM php:9.0.1"]],
+    path: [["Dockerfile", "k8s/app.yaml"], ["composer.json"]]
+  },
+  "php2shell/pinned-setup-php": {
+    content: [["          php-version: '8.3.10'", "php-version: 8.2.0", "        php: ['8.1.27','8.2.34']", "php-version: '7.4.33'"],
+      ["php-version: '8.3'", "php-version: '8.3.36'", "php-version: ${{ matrix.php }}", "php-version: '8.2.35'", "node-version: 8.2.0"]],
+    path: [[".github/workflows/tests.yml"], ["workflows/tests.yml"]]
+  },
+  "php2shell/pinned-php-version-file": {
+    content: [["8.3.10", "7.4.33", "8.2.0"], ["8.3.36", "8.3", "8.4.27", "9.0.1", "18.3.4"]],
+    path: [[".php-version", "x/.php-version"], ["php-version"]]
+  },
+  "php2shell/pinned-tool-versions": {
+    content: [["php 8.3.10", "php = \"8.2.0\"", "php 7.4.33"], ["php 8.3.36", "nodejs 8.3.10", "php 8.3"]],
+    path: [[".tool-versions", "mise.toml"], ["tool-versions.md"]]
+  },
+  "php2shell/pinned-composer-platform": {
+    content: [["\"php\": \"8.2.10\"", "        \"php\": \"7.4.33\"", "\"php\": \"=8.1.0\""],
+      ["\"php\": \"^8.1\"", "\"php\": \">=7.4.33\"", "\"php\": \"8.3.36\"", "\"php\": \"8.2\"", "\"php-http/client\": \"8.2.0\""]],
+    path: [["composer.json", "app/composer.json"], ["composer.lock"]]
+  },
+  "php2shell/pinned-downloads": {
+    content: [["https://www.php.net/distributions/php-8.2.10.tar.xz", "ENV PHP_VERSION=8.1.20", "PHP_VERSION: 7.4.33", "php_version=8.3.10"],
+      ["https://www.php.net/distributions/php-8.3.36.tar.xz", "PHP_VERSION=8.5.12", "\"php-http/client\": \"1.8.0\"", "mysql-8.0.35.tar.gz"]]
   },
   "php2shell/eol": {
     content: [["FROM php:7.4-apache", "FROM php:8.1-fpm", "FROM php:8.0.30-cli", "FROM php:5.6-apache", "RUN apt install php7.4-fpm"], ["FROM php:8.2-fpm", "FROM php:8.10", "FROM php:8.3-apache"]]

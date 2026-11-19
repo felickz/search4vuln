@@ -15,6 +15,24 @@
     repo: { label: "Repository", qualifier: "repo", pattern: REPO_RE, hint: "owner/name", help: "Full repository name including the owner." }
   };
 
+  // Confidence tabs. A repo can never confirm exploitability, so labels only speak of version evidence.
+  var TABS = [
+    {
+      id: "pinned",
+      label: "Pinned in affected range",
+      intro: "These queries match an explicit patch-level build that falls inside the affected range, so the referenced runtime contains the " +
+        "vulnerable code unless it is a vendor-fixed build. This is the strongest signal repo content can give, but a repo can never confirm " +
+        "exploitability: hardware, server configuration, vendor-patched images, mitigations and network reachability are invisible to code search."
+    },
+    {
+      id: "potential",
+      label: "Potential (unpinned or unknown)",
+      intro: "These queries show a possibly affected runtime line: floating or major-only tags, language-level declarations, bundled-product images " +
+        "and similar. The actual build is decided by the image pull time, CI, platform or host, so every hit needs an artifact-level check " +
+        "(java -version, jcmd <PID> VM.version, php -v, an image scanner or an SBOM)."
+    }
+  ];
+
   // Returns { ok, qualifier, error }. qualifier is "" for the "none" scope.
   function scopeQualifier(type, value) {
     var scope = SCOPES[type];
@@ -35,5 +53,5 @@
     return "https://github.com/search?type=code&q=" + encodeURIComponent(query);
   }
 
-  return { SCOPES: SCOPES, scopeQualifier: scopeQualifier, buildQuery: buildQuery, searchUrl: searchUrl };
+  return { SCOPES: SCOPES, TABS: TABS, scopeQualifier: scopeQualifier, buildQuery: buildQuery, searchUrl: searchUrl };
 });
